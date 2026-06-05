@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de QR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f0ede8;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.2);
+      --text: #1a1a18;
+      --text-muted: #6b6a65;
+      --text-hint: #a09f9a;
+      --accent: #1a1a18;
+      --accent-text: #ffffff;
+      --info-bg: #e6f1fb;
+      --info-text: #185fa5;
+      --success-bg: #eaf3de;
+      --success-text: #3b6d11;
+      --radius-md: 8px;
+      --radius-lg: 14px;
+      --font-sans: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #18181a;
+        --surface: #222224;
+        --surface2: #2a2a2c;
+        --border: rgba(255,255,255,0.08);
+        --border-strong: rgba(255,255,255,0.18);
+        --text: #f0efea;
+        --text-muted: #9c9b96;
+        --text-hint: #5a5a56;
+        --accent: #f0efea;
+        --accent-text: #18181a;
+        --info-bg: #0c2840;
+        --info-text: #85b7eb;
+        --success-bg: #172004;
+        --success-text: #97c459;
+      }
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 2.5rem;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo svg { color: var(--accent-text); }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-left: 52px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Form elements */
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 7px;
+    }
+    .row { margin-bottom: 1.5rem; }
+    .row:last-child { margin-bottom: 0; }
+
+    input[type="url"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color .15s;
+      -webkit-appearance: none;
+    }
+    input[type="url"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+      border-color: var(--border-strong);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+    }
+    input::placeholder { color: var(--text-hint); }
+
+    /* Platform grid */
+    .plat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+    }
+    .plat-btn {
+      border: 0.5px solid var(--border);
+      background: var(--surface2);
+      border-radius: var(--radius-md);
+      padding: 10px 6px;
+      cursor: pointer;
+      text-align: center;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all .12s;
+    }
+    .plat-btn svg { display: block; margin: 0 auto 5px; }
+    .plat-btn:hover { border-color: var(--border-strong); color: var(--text); }
+    .plat-btn.active {
+      background: var(--info-bg);
+      border-color: var(--info-text);
+      color: var(--info-text);
+    }
+
+    /* Generate button */
+    .gen-btn {
+      width: 100%;
+      padding: 13px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      background: var(--accent);
+      color: var(--accent-text);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .gen-btn:hover { opacity: .87; }
+    .gen-btn:active { transform: scale(.99); }
+
+    /* Advanced toggle */
+    .adv-toggle {
+      background: none;
+      border: none;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+    .adv-toggle:hover { color: var(--text); }
+    .adv-toggle svg { transition: transform .2s; }
+    .adv-toggle.open svg { transform: rotate(180deg); }
+
+    .adv-panel {
+      display: none;
+      background: var(--surface2);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .adv-panel.visible { display: block; }
+    .adv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 480px) { .adv-grid { grid-template-columns: 1fr; } }
+
+    .color-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input[type="color"] {
+      width: 38px;
+      height: 38px;
+      padding: 2px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      background: none;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 6px 0 4px;
+    }
+    .range-val {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Output */
+    .output { display: none; }
+    .output.visible { display: block; }
+
+    .qr-result {
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+    @media (max-width: 480px) {
+      .qr-result { flex-direction: column; align-items: center; }
+    }
+
+    .qr-canvas-wrap {
+      flex-shrink: 0;
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px;
+      border: 0.5px solid var(--border);
+    }
+    #qr-canvas { display: block; }
+
+    .qr-info { flex: 1; min-width: 0; }
+    .qr-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .qr-url-out {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      word-break: break-all;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .act-btn {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background .12s;
+    }
+    .act-btn:hover { background: var(--surface2); }
+    .act-btn.success {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-color: var(--success-text);
+    }
+
+    /* History */
+    .history { margin-top: 1.5rem; display: none; }
+    .history.visible { display: block; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-hint);
+      margin-bottom: 10px;
+    }
+    .hist-list { display: flex; flex-direction: column; gap: 6px; }
+    .hist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: border-color .12s;
+    }
+    .hist-item:hover { border-color: var(--border-strong); }
+    .hist-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .hist-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hist-label strong { color: var(--text); font-weight: 600; }
+    .hist-time {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-hint);
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    .divider {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--accent);
+      color: var(--accent-text);
+      padding: 10px 20px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-top">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <path d="M14 14h3v3h-3z"/><path d="M17 17h4"/><path d="M17 21v-4"/>
+        </svg>
+      </div>
+      <h1>Generador de QR</h1>
+    </div>
+    <p class="subtitle">Para videos en YouTube, Streamable, Vimeo y más</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Plataforma -->
+    <div class="row">
+      <label>Plataforma</label>
+      <div class="plat-grid">
+
+        <button class="plat-btn active" data-plat="youtube"
+          data-label="URL del video en YouTube"
+          data-placeholder="https://www.youtube.com/watch?v=..."
+          data-color="#c0392b"
+          onclick="selectPlat(this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7s-.3-2-1.2-2.7c-1.1-1.2-2.4-1.2-3-1.3C16.5 3 12 3 12 3s-4.5 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.4v2.1C.7 15.7 1 18 1 18s.3 2 1.2 2.7c1.1 1.2 2.6 1.1 3.3 1.2C7.6 22 12 22 12 22s4.5 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.7 1.2-2.7 1.2-2.7s.3-2.2.3-4.4v-2.1C23.3 9.2 23 7 23 7zm-13.5 8.9V8.1l8.1 3.9-8.1 3.9z"/></svg>
+          YouTube
+        </button>
+
+        <button class="plat-btn" data-plat="streamable"
+          data-label="URL del video en Streamable"
+          data-placeholder="https://streamable.com/..."
+          data-color="#1a73e8"
+          onclick="selectPlat(this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+          Streamable
+        </button>
+
+        <button class="plat-btn" data-plat="vimeo"
+          data-label="URL del video en Vimeo"
+          data-placeholder="https://vimeo.com/..."
+          data-color="#1ab7ea"
+          onclick="selectPlat(this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22 7.4c-.1 2.4-1.8 5.7-5 9.9C13.6 21.7 10.9 24 8.6 24c-1.4 0-2.5-1.3-3.5-3.8L3.4 14c-.7-2.5-1.4-3.8-2.2-3.8-.2 0-.8.4-1.9 1.1L.2 10c1.2-1 2.3-2.1 3.1-3C4.5 5.6 5.5 4.9 6 4.9c1.3 0 2.1.8 2.5 2.3.4 1.7.7 2.6 1 3.8.6 2.5 1.2 3.8 1.8 3.8.5 0 1.3-.8 2.3-2.4 1-.8 1.6-2.1 1.7-2.7.2-1-.4-1.5-1.7-1.5-.6 0-1.2.1-1.9.4 1.3-4.2 3.7-6.2 7.3-6.1 2.7.1 3.9 1.8 3.8 4.9z"/></svg>
+          Vimeo
+        </button>
+
+        <button class="plat-btn" data-plat="tiktok"
+          data-label="URL del video en TikTok"
+          data-placeholder="https://www.tiktok.com/@usuario/video/..."
+          data-color="#010101"
+          onclick="selectPlat(this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.7 4.7 0 0 1 15 0h-3.4v16.4a2.8 2.8 0 0 1-2.8 2.4 2.8 2.8 0 0 1-2.8-2.8 2.8 2.8 0 0 1 2.8-2.8c.3 0 .5 0 .8.1V9.8c-.3 0-.5-.1-.8-.1a6.2 6.2 0 0 0-6.2 6.2A6.2 6.2 0 0 0 8.8 22a6.2 6.2 0 0 0 6.2-6.2V7.9a8 8 0 0 0 4.7 1.5V6A4.7 4.7 0 0 1 19.6 3.3z"/></svg>
+          TikTok
+        </button>
+
+        <button class="plat-btn" data-plat="otro"
+          data-label="Cualquier URL"
+          data-placeholder="https://..."
+          data-color="#555"
+          onclick="selectPlat(this)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Otro enlace
+        </button>
+
+      </div>
+    </div>
+
+    <!-- URL -->
+    <div class="row">
+      <label id="url-label">URL del video en YouTube</label>
+      <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+    </div>
+
+    <!-- Título -->
+    <div class="row">
+      <label>Título / Descripción (opcional)</label>
+      <input type="text" id="title-input" placeholder="Ej: Demo del producto, Tutorial parte 1..." />
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Avanzado -->
+    <button class="adv-toggle" id="adv-toggle" onclick="toggleAdv()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      Opciones avanzadas
+    </button>
+
+    <div class="adv-panel" id="adv-panel">
+      <div class="adv-grid">
+        <div>
+          <label>Color del QR</label>
+          <div class="color-field">
+            <input type="color" id="fg-color" value="#000000" />
+            <span style="font-size:13px;color:var(--text-muted)">Módulos</span>
+          </div>
+        </div>
+        <div>
+          <label>Color de fondo</label>
+          <div class="color-field">
+            <input type="color" id="bg-color" value="#ffffff" />
+            <span style="font-size:13px;color:var(--text-muted)">Fondo</span>
+          </div>
+        </div>
+        <div>
+          <label>Tamaño — <span class="range-val" id="size-val">256 px</span></label>
+          <input type="range" id="size-slider" min="128" max="512" step="32" value="256"
+            oninput="document.getElementById('size-val').textContent = this.value + ' px'" />
+        </div>
+        <div>
+          <label>Corrección de errores</label>
+          <select id="ec-level">
+            <option value="L">L – Mínimo (7%)</option>
+            <option value="M" selected>M – Medio (15%)</option>
+            <option value="Q">Q – Alto (25%)</option>
+            <option value="H">H – Máximo (30%)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="gen-btn" onclick="generateQR()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4"/><path d="M17 21v-4"/></svg>
+      Generar código QR
+    </button>
+
+    <!-- Resultado -->
+    <div class="output" id="output">
+      <hr class="divider" />
+      <div class="qr-result">
+        <div class="qr-canvas-wrap">
+          <canvas id="qr-canvas"></canvas>
+        </div>
+        <div class="qr-info">
+          <div class="qr-name" id="qr-name-out"></div>
+          <div class="qr-url-out" id="qr-url-out"></div>
+          <div class="actions">
+            <button class="act-btn" onclick="downloadPNG()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PNG
+            </button>
+            <button class="act-btn" onclick="downloadSVG()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              SVG
+            </button>
+            <button class="act-btn" id="copy-btn" onclick="copyURL()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copiar URL
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- Historial -->
+  <div class="history" id="history">
+    <p class="section-title">Generados esta sesión</p>
+    <div class="hist-list" id="hist-list"></div>
+  </div>
+
+</div><!-- /page -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ── State ── */
+  let currentPlat = 'youtube';
+  let currentColor = '#c0392b';
+  let sessionHistory = [];
+
+  /* ── Platform selector ── */
+  function selectPlat(btn) {
+    document.querySelectorAll('.plat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPlat = btn.dataset.plat;
+    currentColor = btn.dataset.color;
+    document.getElementById('url-label').textContent = btn.dataset.label;
+    document.getElementById('url-input').placeholder = btn.dataset.placeholder;
+    document.getElementById('url-input').value = '';
+    document.getElementById('url-input').focus();
+  }
+
+  /* ── Advanced panel ── */
+  function toggleAdv() {
+    const panel = document.getElementById('adv-panel');
+    const btn   = document.getElementById('adv-toggle');
+    const open  = panel.classList.toggle('visible');
+    btn.classList.toggle('open', open);
+  }
+
+  /* ── Generate QR ── */
+  function generateQR() {
+    const url   = document.getElementById('url-input').value.trim();
+    const title = document.getElementById('title-input').value.trim();
+    const fg    = document.getElementById('fg-color').value;
+    const bg    = document.getElementById('bg-color').value;
+    const size  = parseInt(document.getElementById('size-slider').value);
+    const ec    = document.getElementById('ec-level').value;
+
+    if (!url) {
+      document.getElementById('url-input').focus();
+      showToast('⚠ Ingresa una URL primero');
+      return;
+    }
+
+    /* Render QR to canvas */
+    const canvas = document.getElementById('qr-canvas');
+    canvas.width  = size;
+    canvas.height = size;
+
+    QRCode.toCanvas(canvas, url, {
+      width: size,
+      margin: 2,
+      color: { dark: fg, light: bg },
+      errorCorrectionLevel: ec
+    }, function(err) {
+      if (err) { showToast('Error al generar el QR'); return; }
+
+      const label = title || url;
+      document.getElementById('qr-name-out').textContent = label.length > 60 ? label.slice(0, 57) + '…' : label;
+      document.getElementById('qr-url-out').textContent  = url;
+
+      const output = document.getElementById('output');
+      output.classList.add('visible');
+      output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      addToHistory(url, title, fg);
+      showToast('✓ QR generado');
+    });
+  }
+
+  /* Allow Enter key on URL field */
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') generateQR();
+  });
+
+  /* ── Download PNG ── */
+  function downloadPNG() {
+    const canvas = document.getElementById('qr-canvas');
+    const slug   = slugify(document.getElementById('title-input').value || 'qr');
+    const a = document.createElement('a');
+    a.download = slug + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    showToast('PNG descargado');
+  }
+
+  /* ── Download SVG (pixel-perfect from canvas) ── */
+  function downloadSVG() {
+    const canvas = document.getElementById('qr-canvas');
+    const size   = canvas.width;
+    const ctx    = canvas.getContext('2d');
+    const data   = ctx.getImageData(0, 0, size, size).data;
+    const fg     = document.getElementById('fg-color').value;
+    const bg     = document.getElementById('bg-color').value;
+
+    /* Find dark pixels and emit rects */
+    let rects = '';
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const i = (y * size + x) * 4;
+        const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+        if (brightness < 128) {
+          rects += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+        }
+      }
+    }
+
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <rect width="${size}" height="${size}" fill="${bg}"/>
+  <g fill="${fg}">${rects}</g>
+</svg>`;
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const slug = slugify(document.getElementById('title-input').value || 'qr');
+    const a = document.createElement('a');
+    a.download = slug + '.svg';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('SVG descargado');
+  }
+
+  /* ── Copy URL ── */
+  function copyURL() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('URL copiada al portapapeles');
+    });
+  }
+
+  /* ── History ── */
+  function addToHistory(url, title, color) {
+    const now  = new Date();
+    const time = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    sessionHistory.unshift({ url, title, color, time, plat: currentPlat });
+    if (sessionHistory.length > 15) sessionHistory.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const sec  = document.getElementById('history');
+    const list = document.getElementById('hist-list');
+    sec.classList.add('visible');
+    list.innerHTML = sessionHistory.map((h, i) => `
+      <div class="hist-item" onclick="loadHistory(${i})">
+        <div class="hist-dot" style="background:${h.color}"></div>
+        <div class="hist-label">
+          ${h.title ? `<strong>${h.title}</strong> — ` : ''}${h.url}
+        </div>
+        <div class="hist-time">${h.time}</div>
+      </div>
+    `).join('');
+  }
+
+  function loadHistory(idx) {
+    const h = sessionHistory[idx];
+    document.getElementById('url-input').value   = h.url;
+    document.getElementById('title-input').value = h.title || '';
+    const btn = document.querySelector(`[data-plat="${h.plat}"]`);
+    if (btn) selectPlat(btn);
+    generateQR();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ── Helpers ── */
+  function slugify(str) {
+    return str.trim().toLowerCase()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+      .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o')
+      .replace(/[úùü]/g,'u').replace(/ñ/g,'n')
+      .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g,'') || 'qr';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+qr-env/
+*.png
+*.svg
+EOF
